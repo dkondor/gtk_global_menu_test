@@ -58,7 +58,7 @@
       </description>
     </request>
 
-    <event name="finished">
+    <event name="finished" type="destructor">
       <description summary="the compositor has finished with the toplevel manager">
         This event indicates that the compositor is done sending events to the
         zwlr_foreign_toplevel_manager_v1. The server will destroy the object
@@ -269,32 +269,40 @@
 
     <!-- Version 4 additions -->
 
-    <event name="gtk_shell1_surface_dbus_properties" since="4">
-      <description summary="information about dbus properties set by the gtk-shell protocol">
-        This event is emitted for clients that use the gtk-shell protocol
-        and the "set_dbus_properties" request defined there to set additional
-        properties. The properties set by the client are relayed here.
-        This can be used e.g. for implementing global menus or for triggering
-        supported actions directly from a desktop interface component.
+    <event name="client_dbus_annotation" since="4">
+      <description summary="DBus interface available for the client">
+        This event is emitted when the client associated with this surface
+        announces that it implements a specific DBus interface, available
+        at the given DBus name and object path. The DBus interface announced
+        by this event is not tied to any specific surface, but to a client app.
+        
+        If an interface is available, both bus_name and object_path will be 
+        non-null. bus_name will typically refer to an unique name, but can
+        potentially be a well-known name as well. If a previously announced
+        interface is no longer available, the event will be emitted for it
+        with bus_name and object_path set to null.
       </description>
-      <!-- TODO: should we really include the application ID here? -->
-      <arg name="application_id" type="string" allow-null="true"/>
-      <arg name="app_menu_path" type="string" allow-null="true"/>
-      <arg name="menubar_path" type="string" allow-null="true"/>
-      <arg name="window_object_path" type="string" allow-null="true"/>
-      <arg name="application_object_path" type="string" allow-null="true"/>
-      <arg name="unique_bus_name" type="string" allow-null="true"/>
+      <arg name="interface" type="string" allow-null="false" summary="The name of the supported DBus interface" />
+      <arg name="bus_name" type="string" allow-null="true" summary="The bus name where the interface is available" />
+      <arg name="object_path" type="string" allow-null="true" summary="The DBus object path that implements the interface" />
     </event>
 
-    <event name="kde_application_menu" since="4">
-      <description summary="information about the appmenu  set by the kde-appmenu protocol">
-          This event is emitted for clients that use the kde-application-menu protocol
-          to set the DBus object path at which they implement the com.canonical.dbusmenu
-          interface. The interface set by the client is relayed here. This can be used
-          for implementing global menus by a desktop interface component.
+    <event name="surface_dbus_annotation" since="4">
+      <description summary="DBus interface available for the client">
+        This event is emitted when the client associated with this surface
+        announces that it implements a specific DBus interface, available
+        at the given DBus name and object path. The DBus interface announced
+        by this event is specific to this toplevel.
+        
+        If an interface is available, both bus_name and object_path will be 
+        non-null. bus_name will typically refer to an unique name, but can
+        potentially be a well-known name as well. If a previously announced
+        interface is no longer available, the event will be emitted for it
+        with bus_name and object_path set to null.
       </description>
-      <arg name="service_name" type="string" />
-      <arg name="object_path" type="string" />
+      <arg name="interface" type="string" allow-null="false" summary="The name of the supported DBus interface" />
+      <arg name="bus_name" type="string" allow-null="true" summary="The bus name where the interface is available" />
+      <arg name="object_path" type="string" allow-null="true" summary="The DBus object path that implements the interface" />
     </event>
   </interface>
 </protocol>
