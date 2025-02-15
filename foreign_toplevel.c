@@ -150,12 +150,12 @@ static void toplevel_free(struct toplevel *tl) {
 	zwlr_foreign_toplevel_handle_v1_destroy(tl->handle);
 	
 	free(tl->props.app_id);
-	free(tl->props.gtk_application_id);
-	free(tl->props.app_menu_path);
 	free(tl->props.menubar_path);
+	free(tl->props.menubar_bus_name);
 	free(tl->props.window_object_path);
+	free(tl->props.window_bus_name);
 	free(tl->props.application_object_path);
-	free(tl->props.unique_bus_name);
+	free(tl->props.application_bus_name);
 	free(tl->props.kde_service_name);	
 	free(tl->props.kde_object_path);
 	
@@ -175,63 +175,72 @@ void parent_cb(void* data, G_GNUC_UNUSED wfthandle* handle, wfthandle* parent) {
 	tl->parent = parent;
 }
 
-static void gtk_dbus_properties_cb(void *data, G_GNUC_UNUSED wfthandle* handle,
-		const char *application_id,
-		const char *app_menu_path,
-		const char *menubar_path,
-		const char *window_object_path,
-		const char *application_object_path,
-		const char *unique_bus_name) {
+static void client_annotations_cb(void *data, G_GNUC_UNUSED wfthandle* handle,
+		const char *interface, const char *bus_name, const char *object_path) {
 	if(!data) return;
 	struct toplevel* tl = (struct toplevel*)data;
 
-	free(tl->props.gtk_application_id);
-	free(tl->props.app_menu_path);
-	free(tl->props.menubar_path);
-	free(tl->props.window_object_path);
-	free(tl->props.application_object_path);
-	free(tl->props.unique_bus_name);	
-	
-	
-	
-	if (application_id != NULL)
-		tl->props.gtk_application_id = strdup(application_id);
-	else tl->props.gtk_application_id = NULL;
+	fprintf(stderr, "got client annotations: %s %s %s\n", interface, bus_name, object_path);
 
-	if (app_menu_path != NULL)
-		tl->props.app_menu_path = strdup(app_menu_path);
-	else tl->props.app_menu_path = NULL;
+	// we only care if this is the application_object_path, which corresponds
+	// to the org.gtk.Actions interface
+	if(!strcmp(interface, "org.gtk.Actions")) {
+		free(tl->props.application_object_path);
+		free(tl->props.application_bus_name);
+		
+		if (object_path != NULL)
+			tl->props.application_object_path = strdup(object_path);
+		else tl->props.application_object_path = NULL;
 
-	if (menubar_path != NULL)
-		tl->props.menubar_path = strdup(menubar_path);
-	else tl->props.menubar_path = NULL;
-
-	if (window_object_path != NULL)
-		tl->props.window_object_path = strdup(window_object_path);
-	else tl->props.window_object_path = NULL;
-
-	if (application_object_path != NULL)
-		tl->props.application_object_path = strdup(application_object_path);
-	else tl->props.application_object_path = NULL;
-
-	if (unique_bus_name != NULL)
-		tl->props.unique_bus_name = strdup(unique_bus_name);
-	else tl->props.unique_bus_name = NULL;
-
+		if (bus_name != NULL)
+			tl->props.application_bus_name = strdup(bus_name);
+		else tl->props.application_bus_name = NULL;
+	}
 }
 
-static void kde_appmenu_cb(void *data, G_GNUC_UNUSED wfthandle* handle,
-		const char *service_name, const char *object_path) {
+static void surface_annotations_cb(void *data, G_GNUC_UNUSED wfthandle* handle,
+		const char *interface, const char *bus_name, const char *object_path) {
 	if(!data) return;
 	struct toplevel* tl = (struct toplevel*)data;
 
-	free(tl->props.kde_service_name);
-	free(tl->props.kde_object_path);
+	fprintf(stderr, "got surface annotations: %s %s %s\n", interface, bus_name, object_path);
 
-	if (service_name) tl->props.kde_service_name = strdup(service_name);
-	else tl->props.kde_service_name = NULL;
-	if (object_path) tl->props.kde_object_path = strdup(object_path);
-	else tl->props.kde_object_path = NULL;
+	if(!strcmp(interface, "org.gtk.Actions")) {
+		free(tl->props.window_object_path);
+		free(tl->props.window_bus_name);
+
+		if (object_path != NULL)
+			tl->props.window_object_path = strdup(object_path);
+		else tl->props.window_object_path = NULL;
+
+		if (bus_name != NULL)
+			tl->props.window_bus_name = strdup(bus_name);
+		else tl->props.window_bus_name = NULL;
+	}
+	else if(!strcmp(interface, "org.gtk.Menus")) {
+		free(tl->props.menubar_path);
+		free(tl->props.menubar_bus_name);
+
+		if (object_path != NULL)
+			tl->props.menubar_path = strdup(object_path);
+		else tl->props.menubar_path = NULL;
+
+		if (bus_name != NULL)
+			tl->props.menubar_bus_name = strdup(bus_name);
+		else tl->props.menubar_bus_name = NULL;
+	}
+	else if (!strcmp(interface, "com.canonical.dbusmenu")) {
+		free(tl->props.kde_object_path);
+		free(tl->props.kde_service_name);
+
+		if (object_path != NULL)
+			tl->props.kde_object_path = strdup(object_path);
+		else tl->props.kde_object_path = NULL;
+
+		if (bus_name != NULL)
+			tl->props.kde_service_name = strdup(bus_name);
+		else tl->props.kde_service_name = NULL;
+	}
 }
 
 struct zwlr_foreign_toplevel_handle_v1_listener toplevel_handle_interface = {
@@ -243,8 +252,8 @@ struct zwlr_foreign_toplevel_handle_v1_listener toplevel_handle_interface = {
     .done         = done_cb,
     .closed       = closed_cb,
     .parent       = parent_cb,
-    .gtk_shell1_surface_dbus_properties = gtk_dbus_properties_cb,
-    .kde_application_menu = kde_appmenu_cb
+    .client_dbus_annotation  = client_annotations_cb,
+    .surface_dbus_annotation = surface_annotations_cb
 };
 
 /* register new toplevel */

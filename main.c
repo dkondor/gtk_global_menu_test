@@ -57,15 +57,17 @@ static void tl_cb(void*, struct toplevel_manager* gr) {
 		dbus_menu = NULL;
 	}
 	
-	if(props->menubar_path && (props->window_object_path || props->application_object_path) && props->unique_bus_name) {
+	if(props->menubar_path && props->menubar_bus_name &&
+		((props->window_object_path && props->window_bus_name) ||
+		 (props->application_object_path && props->application_bus_name))) {
 		// try using the GTK menu implementation
-		GDBusMenuModel *model = g_dbus_menu_model_get(bus, props->unique_bus_name, props->menubar_path);
+		GDBusMenuModel *model = g_dbus_menu_model_get(bus, props->menubar_bus_name, props->menubar_path);
 		if(model) {
 			gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(menu_btn), G_MENU_MODEL(model));
 			g_object_unref(model);
 			
 			if(props->application_object_path) {
-				GDBusActionGroup *grp = g_dbus_action_group_get(bus, props->unique_bus_name, props->application_object_path);
+				GDBusActionGroup *grp = g_dbus_action_group_get(bus, props->application_bus_name, props->application_object_path);
 				if(grp) {
 					gtk_widget_insert_action_group(menu_btn, "app", G_ACTION_GROUP(grp));
 					g_object_unref(grp);
@@ -73,7 +75,7 @@ static void tl_cb(void*, struct toplevel_manager* gr) {
 				else fprintf(stderr, "Error retrieving app action group!\n");
 			}
 			if(props->window_object_path) {
-				GDBusActionGroup *grp = g_dbus_action_group_get(bus, props->unique_bus_name, props->window_object_path);
+				GDBusActionGroup *grp = g_dbus_action_group_get(bus, props->window_bus_name, props->window_object_path);
 				if(grp) {
 					gtk_widget_insert_action_group(menu_btn, "win", G_ACTION_GROUP(grp));
 					g_object_unref(grp);

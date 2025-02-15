@@ -41,12 +41,12 @@ struct toplevel_manager;
 /* properties of toplevels we care about */
 struct toplevel_properties {
 	char* app_id;
-	char *gtk_application_id;
-	char *app_menu_path;
 	char *menubar_path;
+	char *menubar_bus_name;
 	char *window_object_path;
+	char *window_bus_name;
 	char *application_object_path;
-	char *unique_bus_name;
+	char *application_bus_name;
 	
 	char *kde_service_name;
 	char *kde_object_path;
