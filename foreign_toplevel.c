@@ -266,7 +266,7 @@ static void new_toplevel(void *data, G_GNUC_UNUSED struct zwlr_foreign_toplevel_
 		return;
 	}
 	struct toplevel_manager* gr = (struct toplevel_manager*)data;
-	struct toplevel* tl = (struct toplevel*)calloc(sizeof(struct toplevel), 1);
+	struct toplevel* tl = (struct toplevel*)calloc(1, sizeof(struct toplevel));
 	if(!tl) {
 		/* TODO: error message */
 		return;
@@ -315,7 +315,7 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 struct toplevel_manager* toplevel_manager_new() {
-	struct toplevel_manager* gr = (struct toplevel_manager*)calloc(sizeof(struct toplevel_manager), 1);
+	struct toplevel_manager* gr = (struct toplevel_manager*)calloc(1, sizeof(struct toplevel_manager));
 	if(!gr) return NULL;
 	
 	struct wl_display* dpy = NULL;
